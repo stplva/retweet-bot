@@ -1,16 +1,25 @@
-import config from '../../twitterconfig'
+import got from 'got'
 import needle from 'needle'
-import { TwitterClient } from 'twitter-api-client'
+import { TwitterApi } from 'twitter-api-v2'
 
-const twitterClient = new TwitterClient(config)
-
+const BASE_URL = process.env.TWITTER_API_BASE_URL
 const token = process.env.BEARER_TOKEN
-const tweetEndpointURL = 'https://api.twitter.com/2/tweets?ids='
-const searchEndpointURL = 'https://api.twitter.com/2/tweets/search/recent'
-const retweetEndpointURL = 'https://api.twitter.com/2/users/:id/retweets'
+
+const user_id = '958371477526663168'
+
+const tweetEndpointURL = `${BASE_URL}/tweets?ids=`
+const searchEndpointURL = `${BASE_URL}/tweets/search/recent`
+
+// OAuth 1.0a (User context)
+const userClient = new TwitterApi({
+	appKey: process.env.TWITTER_API_KEY as string,
+	appSecret: process.env.TWITTER_API_SECRET as string,
+	accessToken: process.env.TWITTER_ACCESS_TOKEN,
+	accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+})
 
 export const getTweetsById = async (ids: any) => {
-	// by default, only эthe Tweet ID and text are returned
+	console.log(`getTweetsById: ${ids}`)
 	const params = {
 		ids: ids,
 		'tweet.fields': 'author_id,created_at,public_metrics',
@@ -18,37 +27,65 @@ export const getTweetsById = async (ids: any) => {
 		'user.fields': 'created_at',
 	}
 
-	const res = await needle('get', tweetEndpointURL, params, {
+	const req = await needle('get', tweetEndpointURL, params, {
 		headers: {
 			'User-Agent': 'v2TweetLookupJS',
 			authorization: `Bearer ${token}`,
 		},
 	})
 
-	if (res.body) {
-		return res.body
+	if (req.body) {
+		return req.body
 	} else {
-		throw new Error('Unsuccessful request')
+		throw new Error('Unsuccessful getTweetsById request')
 	}
 }
 
 export const searchRecentTweetsByQuery = async (query: any) => {
+	console.log(`searchRecentTweetsByQuery: ${query}`)
 	const params = {
 		query: `${query} -is:retweet -has:mentions -is:quote`,
 		'tweet.fields': 'author_id,public_metrics',
-		start_time: new Date().setDate(new Date().getDate() - 1), //get tweets for the last day
+		start_time: new Date(
+			new Date().setDate(new Date().getDate() - 1)
+		).toISOString(), //get tweets for the last day
 	}
 
-	const res = await needle('get', searchEndpointURL, params, {
+	const req = await needle('get', searchEndpointURL, params, {
 		headers: {
 			'User-Agent': 'v2RecentSearchJS',
 			authorization: `Bearer ${token}`,
 		},
 	})
 
-	if (res.body) {
-		return res.body
+	if (req.body) {
+		return req.body
 	} else {
-		throw new Error('Unsuccessful request')
+		throw new Error('Unsuccessful searchRecentTweetsByQuery request')
 	}
+}
+
+export const tweet = async (text: string, params: any) => {
+	console.log(`Tweet...`)
+	userClient.v1
+		.tweet(text, params)
+		.then((res) => {
+			console.log('Tweeted!', res.id)
+		})
+		.catch((err) => {
+			console.error(err)
+		})
+}
+
+export const retweet = async (tweetId: string) => {
+	console.log(`Retweeting a tweet with id ${tweetId}`)
+
+	userClient.v2
+		.retweet(user_id, tweetId)
+		.then((res) => {
+			console.log('Retweeted!', res.data.retweeted)
+		})
+		.catch((err) => {
+			console.error(err)
+		})
 }
