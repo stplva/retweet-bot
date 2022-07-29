@@ -1,4 +1,3 @@
-import got from 'got'
 import needle from 'needle'
 import { TwitterApi } from 'twitter-api-v2'
 
@@ -41,14 +40,15 @@ export const getTweetsById = async (ids: any) => {
 	}
 }
 
-export const searchRecentTweetsByQuery = async (query: any) => {
-	console.log(`searchRecentTweetsByQuery: ${query}`)
+export const searchRecentTweetsByQuery = async (query: any, days: number = 7) => {
+	console.log(`searchRecentTweetsByQuery: ${query} for days: ${days}`)
 	const params = {
 		query: `${query} -is:retweet -has:mentions -is:quote`,
 		'tweet.fields': 'author_id,public_metrics',
+		max_results: 100,
 		start_time: new Date(
-			new Date().setDate(new Date().getDate() - 1)
-		).toISOString(), //get tweets for the last day
+			new Date().setDate(new Date().getDate() - days)
+		).toISOString(), //get tweets for the last n day
 	}
 
 	const req = await needle('get', searchEndpointURL, params, {

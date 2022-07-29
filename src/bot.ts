@@ -31,9 +31,9 @@ export const Bot = async () => {
 		process.exit()
 	}
 
-	const getRecentTweets = async (query: string) => {
+	const getRecentTweets = async (query: string, days?: number) => {
 		try {
-			const res = await searchRecentTweetsByQuery(query)
+			const res = await searchRecentTweetsByQuery(query, days)
 			return res
 		} catch (e) {
 			console.log(e)
