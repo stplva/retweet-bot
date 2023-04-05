@@ -9,7 +9,6 @@ import {
 } from './lib/twitter'
 import { Tweet, Weights } from './lib/types'
 import { calcRating } from './lib/utils'
-import { response } from './tweets-hard.js'
 
 const weights: Weights = {
 	retweet_weight: 4,

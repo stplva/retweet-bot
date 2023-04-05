@@ -52,7 +52,7 @@ export const searchRecentTweetsByQuery = async (query: any, days = 7) => {
 	}
 
 	const params = {
-		query: `${query} -is:retweet -has:mentions -is:quote`,
+		query: `"${query}" -is:retweet -has:mentions -is:quote`,
 		'tweet.fields': 'author_id,public_metrics',
 		max_results: 100,
 		start_time: new Date(
