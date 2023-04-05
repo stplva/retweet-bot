@@ -26,22 +26,31 @@ export const getTweetsById = async (ids: any) => {
 		'user.fields': 'created_at',
 	}
 
-	const req = await needle('get', tweetEndpointURL, params, {
+	const res = await needle('get', tweetEndpointURL, params, {
 		headers: {
 			'User-Agent': 'v2TweetLookupJS',
 			authorization: `Bearer ${token}`,
 		},
 	})
 
-	if (req.body) {
-		return req.body
+	if (res.body) {
+		if (res.body.errors) {
+			throw new Error(`Unsuccessful getTweetsById request: ${JSON.stringify(res.body.errors, null, 2)}`)
+		}
+		return res.body
 	} else {
 		throw new Error('Unsuccessful getTweetsById request')
 	}
 }
 
-export const searchRecentTweetsByQuery = async (query: any, days: number = 7) => {
-	console.log(`searchRecentTweetsByQuery: ${query} for days: ${days}`)
+export const searchRecentTweetsByQuery = async (query: any, days = 7) => {
+	console.log(`searchRecentTweetsByQuery: "${query}" for days: ${days}`)
+
+	// 1 week is max
+	if (days > 7) {
+		days = 7
+	}
+
 	const params = {
 		query: `${query} -is:retweet -has:mentions -is:quote`,
 		'tweet.fields': 'author_id,public_metrics',
@@ -51,15 +60,18 @@ export const searchRecentTweetsByQuery = async (query: any, days: number = 7) =>
 		).toISOString(), //get tweets for the last n day
 	}
 
-	const req = await needle('get', searchEndpointURL, params, {
+	const res = await needle('get', searchEndpointURL, params, {
 		headers: {
 			'User-Agent': 'v2RecentSearchJS',
 			authorization: `Bearer ${token}`,
 		},
 	})
 
-	if (req.body) {
-		return req.body
+	if (res.body) {
+		if (res.body.errors) {
+			throw new Error(`Unsuccessful searchRecentTweetsByQuery request: ${JSON.stringify(res.body, null, 2)}`)
+		}
+		return res.body
 	} else {
 		throw new Error('Unsuccessful searchRecentTweetsByQuery request')
 	}
@@ -77,8 +89,12 @@ export const tweet = async (text: string, params: any) => {
 		})
 }
 
-export const retweet = async (tweetId: string) => {
+export const retweet = async (tweetId: string | undefined) => {
 	console.log(`Retweeting a tweet with id ${tweetId}`)
+
+	if (!tweetId) {
+		throw new Error('Unsuccessful retweet: Undefined tweeId')
+	}
 
 	userClient.v2
 		.retweet(user_id, tweetId)

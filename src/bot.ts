@@ -22,13 +22,13 @@ export const Bot = async () => {
 
 	const getTweet = async (ids: any) => {
 		try {
-			const result = await getTweetsById(ids)
-			console.log(result)
+			const res = await getTweetsById(ids)
+			console.log(res)
+			return res
 		} catch (e) {
 			console.log(e)
 			process.exit(-1)
 		}
-		process.exit()
 	}
 
 	const getRecentTweets = async (query: string, days?: number) => {
@@ -39,39 +39,52 @@ export const Bot = async () => {
 			console.log(e)
 			process.exit(-1)
 		}
-		process.exit()
 	}
 
-	const getMostPopTweetId = (tweets: Tweet[]) => {
+	const getMostPopTweetId = (tweets: Tweet[] | undefined) => {
 		console.log(`getMostPopTweetId`)
-		const ratingArr: any = []
 
-		tweets.forEach((tweet) => {
+		if (!tweets) {
+			console.log('getMostPopTweetId: tweets are undefined', tweets)
+			return
+		}
+
+		const ratingArr = tweets.map((tweet) => {
 			const rating = calcRating(tweet.public_metrics, weights)
-			ratingArr.push({ id: tweet.id, rating })
+			return { id: tweet.id, rating }
 		})
 
-		const max = ratingArr.reduce((acc: any, el: any) => {
+		const maxRating = ratingArr.reduce((acc: any, el: any) => {
 			return (acc = acc > el.rating ? acc : el.rating)
 		}, 0)
 
-		if (max === 0) {
+		if (maxRating === 0) {
 			console.log('There were no tweets worth retweeting today.')
 			return
 		}
 
-		const mostPopTweet = ratingArr.find((el: any) => el.rating === max)
+		const mostPopTweet = ratingArr.find((el) => el.rating === maxRating)
 
 		console.log(ratingArr)
-		console.log(`The most popular: ${mostPopTweet.id} with a rating: ${max}`)
-		return mostPopTweet.id
+		console.log(`The most popular tweet: ${mostPopTweet?.id} with a rating: ${maxRating}`)
+		return mostPopTweet?.id
 	}
 
-	const arr = await getRecentTweets('как же мощно')
-	// const arr = response.data
+	let recentTweets: { data: any[] } = { data: [] }
 
-	const mostPopTweetId = getMostPopTweetId(arr.data)
-	retweet(mostPopTweetId)
+	try {
+		recentTweets = await getRecentTweets('как же мощно')
+	} catch (e) {
+		console.log(e)
+	}
+
+	const mostPopTweetId = getMostPopTweetId(recentTweets?.data)
+	try {
+		await retweet(mostPopTweetId)
+	} catch (e) {
+		console.log(e)
+		process.exit(-1)
+	}
 }
 
 Bot()
